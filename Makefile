@@ -3,9 +3,9 @@
 #
 
 CC=gcc
-CFLAGS = -Wall -std=c99 -ggdb  -I/usr/local/include
+CFLAGS = -Wall -std=c99 -ggdb -I/usr/local/include
 LDFLAGS= -L/usr/local/lib
-LIBS= -lgsl
+LIBS= -lgsl -lm -ldl
 OBJS1 = network.o main.o
 OBJS2=  network.o tests.o
 

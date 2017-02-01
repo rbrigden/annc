@@ -1,12 +1,11 @@
 #include "network.h"
-#include <assert.h>
 
 
 static void test_init_network() {
   network_t *net;
   int num_layers = 4;
   int layers[] = {1,10,10,1};
-  net = init_network(layers, num_layers);
+  net = init_network(layers, num_layers, &sigmoid);
   assert(net->num_layers == num_layers);
 
   // test matrix dimensions
@@ -24,13 +23,25 @@ static void test_init_network() {
   }
 
   free_network(net);
+}
 
+static void test_map() {
+  gsl_matrix *m1;
+  gsl_matrix *m2;
+  m1 = gsl_matrix_calloc(10, 10);
+  m2 = gsl_matrix_alloc(10, 10);
+  gsl_matrix_set_all (m2, 2);
+  double add2 (double x) { return x + 2; }
+  map(&add2, m1);
+  assert(gsl_matrix_equal(m1,m2));
 }
 
 
 int main() {
   printf("%s\n", "Testing init_network");
   test_init_network();
+  printf("%s\n", "Testing test_map");
+  test_map();
   printf("%s\n", "All tests passed.");
   return 0;
 }
