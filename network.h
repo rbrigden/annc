@@ -17,6 +17,10 @@
 // standard deviation of the gaussian distribution
 #define SIGMA 1
 
+typedef struct gsl_matrix_list {
+  int length;
+  gsl_matrix **data;
+} gsl_matrix_list_t;
 
 typedef struct network {
   int num_layers;
@@ -30,12 +34,16 @@ typedef struct network {
 network_t *init_network(int layers[], int num_layers,
                                       double (*activation)(double));
 void free_network(network_t *net);
-gsl_matrix *feedforward(network_t* net, gsl_matrix *a);
-
-
-// activation functions
+gsl_matrix *feedforward(network_t* net, gsl_matrix *a,
+                    gsl_matrix_list_t *activations, gsl_matrix_list_t *outputs);
+void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
+              gsl_matrix_list_t *weight_grads, gsl_matrix_list_t *bias_grads);
+// auxiliary functions
 double sigmoid(double z);
+double sigmoid_prime(double x);
 double relu(double z);
+gsl_matrix *quad_cost_derivative(gsl_matrix *final_activation,
+                                 gsl_matrix *targets);
 
 
 // matrix functions
@@ -43,7 +51,7 @@ gsl_matrix *rand_gaussian_matrix(size_t rows, size_t cols);
 void map(double (*f)(double), gsl_matrix *m);
 void print_matrix(FILE *f, const gsl_matrix *m);
 bool same_shape(gsl_matrix *a, gsl_matrix *b);
-
-
+gsl_matrix_list_t *gsl_matrix_list_malloc(size_t length);
+gsl_matrix *matrix_copy(gsl_matrix *m);
 
 #endif
