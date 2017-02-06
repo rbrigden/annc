@@ -1,6 +1,32 @@
-#include "network.h"
+#include "network/network.h"
+#include "mnist/mnist_loader.h"
 
 int main() {
+
+  set_loader_t *set;
+  printf("%s\n", TRAIN_IMAGES);
+
+
+  if (verify_data()) {
+    printf("%s\n", "woohoo, verified");
+  } else {
+    printf("%s\n", "whoops, not verified");
+    return 1;
+  }
+  set = init_set_loader(TRAIN_IMAGES, TRAIN_LABELS);
+  printf("%s\n", "No shuffle");
+  for (int i = 0; i < 5; i++) image_print(get_next_image(set), set->height);
+  shuffle(set);
+  printf("%s\n", "Post shuffle");
+  for (int i = 0; i < 5; i++) image_print(get_next_image(set), set->height);
+  set_loader_free(set);
+
+  return 0;
+}
+
+
+
+int net_exampe() {
   network_t *net;
   gsl_matrix *a;
   int num_layers = 4;
@@ -43,27 +69,22 @@ int main() {
   gsl_matrix_list_t *bias_grads;
   weight_grads = gsl_matrix_list_malloc(net->num_layers-1);
   bias_grads = gsl_matrix_list_malloc(net->num_layers-1);
-  y = rand_gaussian_matrix(layers[0],1);
+  y = rand_gaussian_matrix(layers[num_layers-1],1);
   backprop(net, a, y, weight_grads, bias_grads);
 
   printf("\n%s\n", "WEIGHT GRADS");
   for (int j = 0; j < weight_grads->length; j++) {
     gsl_matrix *m2 = weight_grads->data[j];
     printf("layer %d, dim: %zu x %zu\n", j+1, m2->size1, m2->size2);
+    // print_matrix(stdout, m2);
   }
 
   printf("\n%s\n", "BIAS GRADS");
   for (int j = 0; j < bias_grads->length; j++) {
     gsl_matrix *m2 = bias_grads->data[j];
+    // print_matrix(stdout, m2);
     printf("layer %d, dim: %zu x %zu\n", j+1, m2->size1, m2->size2);
   }
-
-
-
-
-
-
-
 
   // free shit
   gsl_matrix_free(a);

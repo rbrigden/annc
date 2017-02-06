@@ -6,8 +6,8 @@ CC=gcc
 CFLAGS = -Wall -std=c99 -ggdb -I/usr/local/include
 LDFLAGS= -L/usr/local/lib
 LIBS= -lgsl -lm -ldl
-OBJS1 = network.o main.o
-OBJS2=  network.o tests.o
+OBJS1= mnist/mnist_loader.o network/network.o main.o
+OBJS2=  mnist/mnist_loader.o network/network.o tests.o
 
 all: dnn tests
 
@@ -17,9 +17,11 @@ dnn: $(OBJS1)
 tests: $(OBJS2)
 	$(CC) $(LDFLAGS) $(OBJS2)  -o tests $(LIBS)
 
+mnist/mnist_loader.o: mnist/mnist_loader.c
+	(cd mnist; make)
 
-network.o: network.c
-	$(CC) $(CFLAGS) -c network.c
+network/network.o: network/network.c
+	(cd network; make)
 
 tests.o: tests.c
 	$(CC) $(CFLAGS) -c tests.c

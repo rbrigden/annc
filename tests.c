@@ -1,4 +1,4 @@
-#include "network.h"
+#include "network/network.h"
 
 
 static void test_init_network() {
