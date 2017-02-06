@@ -119,6 +119,7 @@ void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
 
 }
 
+
 // BEGIN MATRIX FUNCTIONS
 
 /*
