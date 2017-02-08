@@ -1,5 +1,5 @@
-#ifndef __MNIST_LOADER_H_
-#define  __MNIST_LOADER_H_
+#ifndef __MNIST_LOADER_H__
+#define  __MNIST_LOADER_H__
 
 #include "../csapp.h"
 #include <stdbool.h>

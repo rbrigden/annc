@@ -51,5 +51,9 @@ void print_matrix(FILE *f, const gsl_matrix *m);
 bool same_shape(gsl_matrix *a, gsl_matrix *b);
 gsl_matrix_list_t *gsl_matrix_list_malloc(size_t length);
 gsl_matrix *matrix_copy(gsl_matrix *m);
-
+void gsl_matrix_list_free(gsl_matrix_list_t *ml); // the whole shebang
+void gsl_matrix_list_free_matrices(gsl_matrix_list_t *ml); // just the matrices
+gsl_matrix_list_t *init_bias_grads(network_t *net);
+gsl_matrix_list_t *init_weight_grads(network_t *net);
+void print_shape(gsl_matrix *m, const char *msg);
 #endif

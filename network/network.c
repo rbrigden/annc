@@ -42,12 +42,17 @@ void free_network(network_t* net) {
 gsl_matrix *feedforward(network_t* net, gsl_matrix *a,
                     gsl_matrix_list_t *activations, gsl_matrix_list_t *outputs) {
   assert(net->layers[0] == a->size1);
-  assert(activations->length == net->num_layers);
-  assert(outputs->length == net->num_layers-1);
   gsl_matrix *tempa;  // temp activations
   gsl_matrix *w;  // weights
   gsl_matrix *b;  // biases
-  activations->data[0] = a; // add the first activation
+  bool record_all_outs = (activations && outputs);
+
+  if (record_all_outs) {
+    assert(activations->length == net->num_layers);
+    assert(outputs->length == net->num_layers-1);
+    activations->data[0] = matrix_copy(a); // add the first activation
+  }
+  a = matrix_copy(a);
   for (int i = 0; i < (net->num_layers-1); i++) {
     w = net->weights[i];
     b = net->biases[i];
@@ -59,12 +64,19 @@ gsl_matrix *feedforward(network_t* net, gsl_matrix *a,
                                 0.0, tempa);
     assert(same_shape(tempa, b));
     gsl_matrix_add(tempa, b);
-    outputs->data[i] = gsl_matrix_alloc(tempa->size1, tempa->size2);
-    gsl_matrix_memcpy(outputs->data[i], tempa);
+    if (record_all_outs) {
+      outputs->data[i] = gsl_matrix_alloc(tempa->size1, tempa->size2);
+      gsl_matrix_memcpy(outputs->data[i], tempa);
+    }
+    gsl_matrix_free(a);
+    // map the activation function across the outputs
     map(net->activation, tempa);
     a = tempa;
-    activations->data[i+1] = gsl_matrix_alloc(a->size1, a->size2);
-    gsl_matrix_memcpy(activations->data[i+1], a);
+
+    if (record_all_outs) {
+      activations->data[i+1] = gsl_matrix_alloc(a->size1, a->size2);
+      gsl_matrix_memcpy(activations->data[i+1], a);
+    }
   }
   return a;
 }
@@ -84,39 +96,60 @@ void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
   gsl_matrix_list_t *activations = gsl_matrix_list_malloc(asize);
   gsl_matrix_list_t *outputs = gsl_matrix_list_malloc(zsize);
   gsl_matrix *final_activation = feedforward(net, input, activations, outputs);
+  gsl_matrix *delta_temp;
 
   // propogate backward thru the network
   gsl_matrix *cost_by_a = quad_cost_derivative(final_activation, target);
+  gsl_matrix_free(final_activation);
   gsl_matrix *sd_outputs = matrix_copy(outputs->data[zsize-1]);
   map(&sigmoid_prime, sd_outputs);
   gsl_matrix_mul_elements(cost_by_a, sd_outputs);
+  gsl_matrix_free(sd_outputs);
   delta = cost_by_a;
-  bias_grads->data[bgrad_size-1] = matrix_copy(delta);
+  delta_temp = gsl_matrix_alloc(net->weights[(wgrad_size-1)]->size2,
+                                            delta->size2);
+  // for (int i = 0; i < bias_grads->length; i++) print_shape(bias_grads->data[i], "bgrads");
+  gsl_matrix_memcpy(bias_grads->data[bgrad_size-1], delta);
 
   // gsl_blas_dgemm(f1, f2, alpha, A, B, beta, C)
   // C = alpha * f1(A) * f2(B) + beta * C
-  weight_grads->data[wgrad_size-1] = gsl_matrix_alloc(delta->size1,
-                                        (activations->data[asize-2])->size1);
+  // weight_grads->data[wgrad_size-1] = gsl_matrix_alloc(delta->size1,
+  //                                       (activations->data[asize-2])->size1);
+
   gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, delta,
                   activations->data[asize-2], 0.0, weight_grads->data[wgrad_size-1]);
 
   for (int l = 2; l < net->num_layers; l++) {
     gsl_matrix *z = outputs->data[zsize-l];
-    gsl_matrix *sp = matrix_copy(z);
-    map(&sigmoid_prime, sp);
-    gsl_matrix *delta_temp = gsl_matrix_alloc(net->weights[(wgrad_size-l+1)]->size2,
-                                              delta->size2);
+    map(&sigmoid_prime, z);
+    gsl_matrix *sp = z;
+    // gsl_matrix *delta_temp = gsl_matrix_alloc(net->weights[(wgrad_size-l+1)]->size2,
+    //                                           delta->size2);
     gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, net->weights[(wgrad_size-l+1)],
                     delta, 0.0, delta_temp);
+    // gsl_matrix_free(delta);
     gsl_matrix_mul_elements(delta_temp, sp);
     delta = delta_temp;
-    bias_grads->data[bgrad_size-l] = matrix_copy(delta);
-    weight_grads->data[wgrad_size-l] = gsl_matrix_alloc(delta->size1,
-                                          (activations->data[asize-l-1])->size1);
+    gsl_matrix_memcpy(bias_grads->data[bgrad_size-l], delta);
+    // weight_grads->data[wgrad_size-l] = gsl_matrix_alloc(delta->size1,
+    //                                       (activations->data[asize-l-1])->size1);
     gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, delta,
                     activations->data[asize-l-1], 0.0, weight_grads->data[wgrad_size-l]);
-  }
 
+  }
+  gsl_matrix_free(cost_by_a);
+  gsl_matrix_free(delta);
+
+
+  // free stuff
+  gsl_matrix_list_free(outputs);
+  gsl_matrix_list_free(activations);
+
+
+}
+
+void print_shape(gsl_matrix *m, const char *msg) {
+  printf("%s: %zu x %zu\n", msg, m->size1, m->size2);
 }
 
 
@@ -158,6 +191,7 @@ gsl_matrix *rand_gaussian_matrix(size_t rows, size_t cols) {
        gsl_matrix_set (m1, i, j, gsl_ran_gaussian(r, SIGMA));
     }
   }
+  gsl_rng_free(r);
   return m1;
 }
 
@@ -170,6 +204,28 @@ gsl_matrix *matrix_copy(gsl_matrix *m) {
   return new_m;
 }
 
+
+gsl_matrix_list_t *init_bias_grads(network_t *net) {
+  gsl_matrix_list_t *ml = (gsl_matrix_list_t*) malloc(sizeof(gsl_matrix_list_t));
+  ml->length = net->num_layers-1;
+  ml->data = (gsl_matrix**) malloc(sizeof(gsl_matrix*)*(net->num_layers-1));
+  for (int l = 1; l < net->num_layers; l++) {
+    ml->data[l-1] = gsl_matrix_calloc(net->layers[l], 1);
+  }
+  return ml;
+}
+
+
+gsl_matrix_list_t *init_weight_grads(network_t *net) {
+  gsl_matrix_list_t *ml = (gsl_matrix_list_t*) malloc(sizeof(gsl_matrix_list_t));
+  ml->length = net->num_layers-1;
+  ml->data = (gsl_matrix**) malloc(sizeof(gsl_matrix*)*(net->num_layers-1));
+  for (int l = 1; l < net->num_layers; l++) {
+    ml->data[l-1] = gsl_matrix_calloc(net->layers[l], net->layers[l-1]);
+  }
+  return ml;
+}
+
 /*
   create an array of gsl_matrices
 */
@@ -178,6 +234,20 @@ gsl_matrix_list_t *gsl_matrix_list_malloc(size_t length) {
   ml->length = length;
   ml->data = (gsl_matrix**) malloc(sizeof(gsl_matrix*)*(length));
   return ml;
+}
+
+void gsl_matrix_list_free(gsl_matrix_list_t *ml) {
+  for (int i = 0; i < ml->length; i++) {
+    gsl_matrix_free(ml->data[i]);
+  }
+  free(ml->data);
+  free(ml);
+}
+
+void gsl_matrix_list_free_matrices(gsl_matrix_list_t *ml) {
+  for (int i = 0; i < ml->length; i++) {
+    gsl_matrix_free(ml->data[i]);
+  }
 }
 
 /*
