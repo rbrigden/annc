@@ -1,15 +1,30 @@
 #include "mnist_network/mnist_network.h"
 
+#define EPOCHS 30
+#define ETA 1.0
+#define MINI_BATCH_SIZE 50
+#define LAYERS {(28*28), 30, 30, 10}
+#define NUM_LAYERS 4
+
+
+
 static int net_example();
+static int train_mnist();
+static int mnist_example_load();
+
 
 
 int main() {
+  train_mnist();
+  return 0;
+}
 
+int train_mnist() {
   set_loader_t *train_set;
   set_loader_t *test_set;
   network_t *net;
-  int num_layers = 4;
-  int layers[] = {(28*28),30,30,10};
+  int num_layers = NUM_LAYERS;
+  int layers[] = LAYERS;
   printf("%s\n", "Initializing network");
   net = init_network(layers, num_layers, &sigmoid);
 
@@ -21,21 +36,44 @@ int main() {
   }
   train_set = init_set_loader(TRAIN_IMAGES, TRAIN_LABELS);
   test_set = init_set_loader(TEST_IMAGES, TEST_LABELS);
-  // printf("%s\n", "No shuffle");
-  // for (int i = 0; i < 5; i++) image_print(get_next_image(train_set), train_set->height);
-  // shuffle(train_set);
-  // printf("%s\n", "Post shuffle");
-  // for (int i = 0; i < 5; i++) image_print(get_next_image(train_set), train_set->height);
-
-  stochastic_gradient_descent(net, train_set, test_set, 100, 10, 0.90);
+  stochastic_gradient_descent(net, train_set, test_set, MINI_BATCH_SIZE, EPOCHS, ETA);
 
   set_loader_free(train_set);
   set_loader_free(test_set);
   free_network(net);
-  // net_example();
-
   return 0;
 }
+
+int mnist_example_load() {
+    set_loader_t *train_set;
+    set_loader_t *test_set;
+    network_t *net;
+    int num_layers = 3;
+    int layers[] = {(28*28),30,10};
+    printf("%s\n", "Initializing network");
+    net = init_network(layers, num_layers, &sigmoid);
+
+    if (verify_data()) {
+      printf("%s\n", "woohoo, verified");
+    } else {
+      printf("%s\n", "whoops, not verified");
+      return 1;
+    }
+    train_set = init_set_loader(TRAIN_IMAGES, TRAIN_LABELS);
+    test_set = init_set_loader(TEST_IMAGES, TEST_LABELS);
+    printf("%s\n", "No shuffle");
+    for (int i = 0; i < 5; i++) image_print(get_next_image(train_set), train_set->height);
+    shuffle(train_set);
+    printf("%s\n", "Post shuffle");
+    for (int i = 0; i < 5; i++) image_print(get_next_image(train_set), train_set->height);
+
+    set_loader_free(train_set);
+    set_loader_free(test_set);
+    free_network(net);
+    return 0;
+}
+
+
 
 
 

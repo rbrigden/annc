@@ -50,9 +50,9 @@ gsl_matrix *feedforward(network_t* net, gsl_matrix *a,
   if (record_all_outs) {
     assert(activations->length == net->num_layers);
     assert(outputs->length == net->num_layers-1);
-    activations->data[0] = matrix_copy(a); // add the first activation
+    gsl_matrix_memcpy(activations->data[0], a);
   }
-  a = matrix_copy(a);
+
   for (int i = 0; i < (net->num_layers-1); i++) {
     w = net->weights[i];
     b = net->biases[i];
@@ -65,7 +65,7 @@ gsl_matrix *feedforward(network_t* net, gsl_matrix *a,
     assert(same_shape(tempa, b));
     gsl_matrix_add(tempa, b);
     if (record_all_outs) {
-      outputs->data[i] = gsl_matrix_alloc(tempa->size1, tempa->size2);
+      // outputs->data[i] = gsl_matrix_alloc(tempa->size1, tempa->size2);
       gsl_matrix_memcpy(outputs->data[i], tempa);
     }
     gsl_matrix_free(a);
@@ -74,7 +74,6 @@ gsl_matrix *feedforward(network_t* net, gsl_matrix *a,
     a = tempa;
 
     if (record_all_outs) {
-      activations->data[i+1] = gsl_matrix_alloc(a->size1, a->size2);
       gsl_matrix_memcpy(activations->data[i+1], a);
     }
   }
@@ -93,9 +92,11 @@ void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
   size_t zsize = net->num_layers-1;
   size_t wgrad_size = weight_grads->length;
   size_t bgrad_size = bias_grads->length;
-  gsl_matrix_list_t *activations = gsl_matrix_list_malloc(asize);
-  gsl_matrix_list_t *outputs = gsl_matrix_list_malloc(zsize);
+  gsl_matrix_list_t *activations = init_activations(net);
+  gsl_matrix_list_t *outputs = init_outputs(net);
+
   gsl_matrix *final_activation = feedforward(net, input, activations, outputs);
+
   gsl_matrix *delta_temp;
 
   // propogate backward thru the network
@@ -108,6 +109,7 @@ void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
   delta = cost_by_a;
   delta_temp = gsl_matrix_alloc(net->weights[(wgrad_size-1)]->size2,
                                             delta->size2);
+
   // for (int i = 0; i < bias_grads->length; i++) print_shape(bias_grads->data[i], "bgrads");
   gsl_matrix_memcpy(bias_grads->data[bgrad_size-1], delta);
 
@@ -139,21 +141,18 @@ void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
   }
   gsl_matrix_free(cost_by_a);
   gsl_matrix_free(delta);
-
+  gsl_matrix_list_free(outputs);
 
   // free stuff
-  gsl_matrix_list_free(outputs);
   gsl_matrix_list_free(activations);
-
-
 }
+
+// BEGIN MATRIX FUNCTIONS
 
 void print_shape(gsl_matrix *m, const char *msg) {
   printf("%s: %zu x %zu\n", msg, m->size1, m->size2);
 }
 
-
-// BEGIN MATRIX FUNCTIONS
 
 /*
   check if two gsl_matrix have the same shape
@@ -204,7 +203,6 @@ gsl_matrix *matrix_copy(gsl_matrix *m) {
   return new_m;
 }
 
-
 gsl_matrix_list_t *init_bias_grads(network_t *net) {
   gsl_matrix_list_t *ml = (gsl_matrix_list_t*) malloc(sizeof(gsl_matrix_list_t));
   ml->length = net->num_layers-1;
@@ -222,6 +220,26 @@ gsl_matrix_list_t *init_weight_grads(network_t *net) {
   ml->data = (gsl_matrix**) malloc(sizeof(gsl_matrix*)*(net->num_layers-1));
   for (int l = 1; l < net->num_layers; l++) {
     ml->data[l-1] = gsl_matrix_calloc(net->layers[l], net->layers[l-1]);
+  }
+  return ml;
+}
+
+gsl_matrix_list_t *init_outputs(network_t *net) {
+  gsl_matrix_list_t *ml = (gsl_matrix_list_t*) malloc(sizeof(gsl_matrix_list_t));
+  ml->length = net->num_layers-1;
+  ml->data = (gsl_matrix**) malloc(sizeof(gsl_matrix*)*(net->num_layers-1));
+  for (int l = 1; l < net->num_layers; l++) {
+    ml->data[l-1] = gsl_matrix_calloc(net->layers[l], 1);
+  }
+  return ml;
+}
+
+gsl_matrix_list_t *init_activations(network_t *net) {
+  gsl_matrix_list_t *ml = (gsl_matrix_list_t*) malloc(sizeof(gsl_matrix_list_t));
+  ml->length = net->num_layers;
+  ml->data = (gsl_matrix**) malloc(sizeof(gsl_matrix*)*(net->num_layers));
+  for (int l = 0; l < net->num_layers; l++) {
+    ml->data[l] = gsl_matrix_calloc(net->layers[l], 1);
   }
   return ml;
 }
@@ -274,6 +292,27 @@ gsl_matrix *quad_cost_derivative(gsl_matrix *final_activation,
   gsl_matrix_memcpy(m, final_activation);
   return m;
 }
+
+
+void save(network_t *net) {
+  char filepath[BUFFER_SIZE];
+  char buff[BUFFER_SIZE];
+  time_t now = time(NULL);
+  strftime(buff, 20, "%Y-%m-%d%H:%M:%S", localtime(&now));
+  sprintf(filepath, "mnist_network%s.res", buff);
+  FILE *f = fopen(filepath, "w");
+  if (f == NULL) {
+      printf("Error opening file!\n");
+      exit(1);
+  }
+  for (int i = 0; i < net->num_layers-1; i++) print_matrix(f, net->weights[i]);
+  fprintf(f, "\n");
+  for (int i = 0; i < net->num_layers-1; i++) print_matrix(f, net->biases[i]);
+  fprintf(f, "\n");
+  fclose(f);
+}
+
+
 
 double sigmoid_prime(double x) {
   return (sigmoid(x) * (1 - sigmoid(x)));

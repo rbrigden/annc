@@ -11,10 +11,9 @@ gsl_matrix *image_to_matrix(image_t *img, size_t width, size_t height);
 gsl_matrix *mnist_target_matrix(image_t *img);
 void update_mini_batch(network_t *net, set_loader_t *loader,
                                 int mini_batch_size, double eta);
-double evaluate(network_t *net, set_loader_t *test_loader);
+int evaluate(network_t *net, set_loader_t *test_loader);
 gsl_matrix *image_to_matrix(image_t *img, size_t width, size_t height);
 gsl_matrix *mnist_target_matrix(image_t *img);
-
 
 
 

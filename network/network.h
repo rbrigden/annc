@@ -8,8 +8,10 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_randist.h>
+#include <time.h>
 
-#define MAX_OBJECT_SIZE 102400
+
+#define BUFFER_SIZE 256
 // layers in the network
 #define MAX_LAYERS 64
 // standard deviation of the gaussian distribution
@@ -42,6 +44,7 @@ double sigmoid_prime(double x);
 double relu(double z);
 gsl_matrix *quad_cost_derivative(gsl_matrix *final_activation,
                                  gsl_matrix *targets);
+void save(network_t *net);
 
 
 // matrix functions
@@ -56,4 +59,7 @@ void gsl_matrix_list_free_matrices(gsl_matrix_list_t *ml); // just the matrices
 gsl_matrix_list_t *init_bias_grads(network_t *net);
 gsl_matrix_list_t *init_weight_grads(network_t *net);
 void print_shape(gsl_matrix *m, const char *msg);
+gsl_matrix_list_t *init_outputs(network_t *net);
+gsl_matrix_list_t *init_activations(network_t *net);
+
 #endif
