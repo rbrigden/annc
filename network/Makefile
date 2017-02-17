@@ -10,7 +10,7 @@ OBS = network.o
 all: network
 
 network: $(OBS)
-	$(CC) $(CFLAGS) -o network.o -c  network.c
+	$(CC) $(CFLAGS) -o network.o -c network.c
 
 clean:
 	rm -f *~ *.o *.out  *.tar *.zip *.gzip *.bzip *.gz

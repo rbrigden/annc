@@ -22,31 +22,51 @@ typedef struct gsl_matrix_list {
   gsl_matrix **data;
 } gsl_matrix_list_t;
 
+typedef struct af {
+  double (*f)(double); // activation function
+  double (*f_p)(double); // activation function derivative
+} af_t;
+
+typedef struct cf {
+  double (*f)(gsl_matrix*, gsl_matrix*); // cost function
+  void (*f_p)(gsl_matrix*, gsl_matrix*, gsl_matrix*); // cost function prime
+} cf_t;
+
 typedef struct network {
+  af_t *activation;
+  cf_t *cost;
+
   int num_layers;
-  double (*activation)(double);
   int layers[MAX_LAYERS];
   gsl_matrix **weights;
   gsl_matrix **biases;
   gsl_matrix_list_t *activations;
   gsl_matrix_list_t *outputs;
+  gsl_matrix_list_t *weight_grads;
+  gsl_matrix_list_t *bias_grads;
+  gsl_matrix_list_t *delta_weight_grads;
+  gsl_matrix_list_t *delta_bias_grads;
 } network_t;
 
 // network functions
-network_t *init_network(int layers[], int num_layers,
-                                      double (*activation)(double));
+network_t *init_network(int layers[], int num_layers, af_t *activation, cf_t *cost);
 void free_network(network_t *net);
 void feedforward(network_t* net, gsl_matrix *a);
 void activateLayer(network_t *net, int l);
 
-void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
-              gsl_matrix_list_t *weight_grads, gsl_matrix_list_t *bias_grads);
-// auxiliary functions
+void backprop(network_t *net, gsl_matrix *target);
+
+// activation functions
+af_t *use_sigmoid();
 double sigmoid(double z);
 double sigmoid_prime(double x);
 double relu(double z);
-gsl_matrix *quad_cost_derivative(gsl_matrix *final_activation,
-                                 gsl_matrix *targets);
+
+// cost functions
+cf_t *use_quad_cost();
+void quad_cost_p(gsl_matrix *dest, gsl_matrix *a, gsl_matrix *y);
+
+// auxiliary functions
 void save(network_t *net);
 
 

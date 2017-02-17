@@ -5,14 +5,14 @@
 /*
   initialize a network
 */
-network_t *init_network(int layers[], int num_layers,
-                                      double (*activation)(double)) {
+network_t *init_network(int layers[], int num_layers, af_t *activation, cf_t *cost) {
   network_t *net = (network_t*) malloc(sizeof(network_t));
   net->num_layers = num_layers;
   memcpy(net->layers, layers, num_layers*sizeof(int));
   net->weights = (gsl_matrix**) malloc(sizeof(gsl_matrix*)*(num_layers-1));
   net->biases = (gsl_matrix**) malloc(sizeof(gsl_matrix*)*(num_layers-1));
   net->activation = activation;
+  net->cost = cost;
   // Generate random biases and weights.
   for (int l = 1; l < num_layers; l++) {
     net->biases[l-1] = rand_gaussian_matrix(layers[l], 1);
@@ -20,6 +20,11 @@ network_t *init_network(int layers[], int num_layers,
   }
   init_activations(net);
   init_outputs(net);
+  net->bias_grads = init_bias_grads(net);
+  net->weight_grads = init_weight_grads(net);
+  net->delta_bias_grads = init_bias_grads(net);
+  net->delta_weight_grads = init_weight_grads(net);
+
   return net;
 }
 
@@ -33,8 +38,14 @@ void free_network(network_t* net) {
   }
   gsl_matrix_list_free(net->activations);
   gsl_matrix_list_free(net->outputs);
+  gsl_matrix_list_free(net->bias_grads);
+  gsl_matrix_list_free(net->weight_grads);
+  gsl_matrix_list_free(net->delta_weight_grads);
+  gsl_matrix_list_free(net->delta_bias_grads);
   free(net->weights);
   free(net->biases);
+  free(net->activation);
+  free(net->cost);
   free(net);
 }
 
@@ -58,49 +69,48 @@ void activateLayer(network_t *net, int l) {
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, net->weights[l],
                 net->activations->data[l], 0.0, net->outputs->data[l]);
   gsl_matrix_add(net->outputs->data[l], net->biases[l]);
-  map_from(net->activation, net->activations->data[l+1], net->outputs->data[l]);
+  map_from(net->activation->f, net->activations->data[l+1], net->outputs->data[l]);
 }
 
-void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
-              gsl_matrix_list_t *weight_grads, gsl_matrix_list_t *bias_grads) {
+void backprop(network_t *net, gsl_matrix *target) {
   // dimensional check
-  assert(weight_grads->length == net->num_layers-1
-          && bias_grads->length == net->num_layers-1);
+  assert(net->delta_weight_grads->length == net->num_layers-1
+          && net->delta_bias_grads->length == net->num_layers-1);
 
   // propogate forward thru the network
   gsl_matrix *delta;
   size_t asize = net->num_layers;
   size_t zsize = net->num_layers-1;
-  size_t wgrad_size = weight_grads->length;
-  size_t bgrad_size = bias_grads->length;
+  size_t wgrad_size = net->delta_weight_grads->length;
+  size_t bgrad_size = net->delta_bias_grads->length;
 
-  feedforward(net, input);
   gsl_matrix *delta_temp;
 
   // propogate backward thru the network
-  gsl_matrix *cost_by_a = quad_cost_derivative(net->activations->data[asize], target);
+  gsl_matrix *cost_by_a = gsl_matrix_calloc(target->size1, target->size2);
+  (*net->cost->f_p)(cost_by_a, net->activations->data[asize-1], target);
   gsl_matrix *sd_outputs = matrix_copy(net->outputs->data[zsize-1]);
-  map(&sigmoid_prime, sd_outputs);
+  map(net->activation->f_p, sd_outputs);
   gsl_matrix_mul_elements(cost_by_a, sd_outputs);
   gsl_matrix_free(sd_outputs);
   delta = cost_by_a;
   delta_temp = gsl_matrix_alloc(net->weights[(wgrad_size-1)]->size2,
                                             delta->size2);
 
-  // for (int i = 0; i < bias_grads->length; i++) print_shape(bias_grads->data[i], "bgrads");
-  gsl_matrix_memcpy(bias_grads->data[bgrad_size-1], delta);
+  // for (int i = 0; i < delta_bias_grads->length; i++) print_shape(delta_bias_grads->data[i], "bgrads");
+  gsl_matrix_memcpy(net->delta_bias_grads->data[bgrad_size-1], delta);
 
   // gsl_blas_dgemm(f1, f2, alpha, A, B, beta, C)
   // C = alpha * f1(A) * f2(B) + beta * C
-  // weight_grads->data[wgrad_size-1] = gsl_matrix_alloc(delta->size1,
+  // delta_weight_grads->data[wgrad_size-1] = gsl_matrix_alloc(delta->size1,
   //                                       (activations->data[asize-2])->size1);
 
   gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, delta,
-                  net->activations->data[asize-2], 0.0, weight_grads->data[wgrad_size-1]);
+                  net->activations->data[asize-2], 0.0, net->delta_weight_grads->data[wgrad_size-1]);
 
   for (int l = 2; l < net->num_layers; l++) {
     gsl_matrix *z = net->outputs->data[zsize-l];
-    map(&sigmoid_prime, z);
+    map(net->activation->f_p, z);
     gsl_matrix *sp = z;
     // gsl_matrix *delta_temp = gsl_matrix_alloc(net->weights[(wgrad_size-l+1)]->size2,
     //                                           delta->size2);
@@ -109,11 +119,11 @@ void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
     // gsl_matrix_free(delta);
     gsl_matrix_mul_elements(delta_temp, sp);
     delta = delta_temp;
-    gsl_matrix_memcpy(bias_grads->data[bgrad_size-l], delta);
-    // weight_grads->data[wgrad_size-l] = gsl_matrix_alloc(delta->size1,
+    gsl_matrix_memcpy(net->delta_bias_grads->data[bgrad_size-l], delta);
+    // delta_weight_grads->data[wgrad_size-l] = gsl_matrix_alloc(delta->size1,
     //                                       (activations->data[asize-l-1])->size1);
     gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, delta,
-                    net->activations->data[asize-l-1], 0.0, weight_grads->data[wgrad_size-l]);
+                    net->activations->data[asize-l-1], 0.0, net->delta_weight_grads->data[wgrad_size-l]);
 
   }
   gsl_matrix_free(cost_by_a);
@@ -121,6 +131,10 @@ void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
 
   // free stuff
 }
+
+// void calculateErrorForLayer(network_t *net, int l) {
+//
+// }
 
 // BEGIN MATRIX FUNCTIONS
 
@@ -173,7 +187,7 @@ gsl_matrix *rand_gaussian_matrix(size_t rows, size_t cols) {
   make a new copy of a matrix
 */
 gsl_matrix *matrix_copy(gsl_matrix *m) {
-  gsl_matrix *new_m = gsl_matrix_alloc(m->size1, m->size2);
+  gsl_matrix *new_m = gsl_matrix_calloc(m->size1, m->size2);
   gsl_matrix_memcpy(new_m, m);
   return new_m;
 }
@@ -272,16 +286,6 @@ void map_from(double (*f)(double), gsl_matrix *dest, gsl_matrix *src) {
 
 // BEGIN AUXILIARY FUNCTIONS
 
-gsl_matrix *quad_cost_derivative(gsl_matrix *final_activation,
-                                 gsl_matrix *targets) {
-  // a_L - y
-  assert(same_shape(final_activation, targets));
-  gsl_matrix *m = gsl_matrix_alloc(targets->size1, targets->size2);
-  gsl_matrix_sub(final_activation, targets);
-  gsl_matrix_memcpy(m, final_activation);
-  return m;
-}
-
 
 void save(network_t *net) {
   char filepath[BUFFER_SIZE];
@@ -303,14 +307,49 @@ void save(network_t *net) {
 
 
 
+af_t *use_sigmoid() {
+  af_t *a = (af_t*)malloc(sizeof(af_t));
+  a->f = &sigmoid;
+  a->f_p = &sigmoid_prime;
+  return a;
+}
+
 double sigmoid_prime(double x) {
-  return (sigmoid(x) * (1 - sigmoid(x)));
+  return (sigmoid(x) * (1.0 - sigmoid(x)));
 }
 
 double sigmoid(double x) {
-  return (1 / (1 + exp(-1 * x)));
+  return (1.0 / (1.0 + exp(-(1.0) * x)));
 }
 
 double relu(double x) {
   return (x > 0.0) ? x : 0;
 }
+
+
+
+cf_t *use_quad_cost() {
+  cf_t *c = (cf_t*)malloc(sizeof(cf_t));
+  // c->f = &quad_cost;
+  c->f_p = &quad_cost_p;
+  return c;
+}
+
+// quad_cost_p applies the derivative of the quadratic cost function
+void quad_cost_p(gsl_matrix *dest, gsl_matrix *a, gsl_matrix *y) {
+  // calculate a - y
+  // assert(dest != NULL && a != NULL && y != NULL);
+  // assert(same_shape(a, y) && same_shape(y, dest));
+  gsl_matrix_add(dest, y);  // dest = y
+  gsl_matrix_scale(dest, -1.0); // dest = - y
+  gsl_matrix_add(dest, a);  // dest = a + (-y) = a - y
+}
+
+// gsl_matrix *quad_cost(gsl_matrix *final_activation,
+//                                  gsl_matrix *targets) {
+//   // a_L - y
+//   assert(same_shape(final_activation, targets));
+//   gsl_matrix_sub(final_activation, targets);
+//   gsl_matrix_memcpy(m, final_activation);
+//   return m;
+// }
