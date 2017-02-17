@@ -28,14 +28,17 @@ typedef struct network {
   int layers[MAX_LAYERS];
   gsl_matrix **weights;
   gsl_matrix **biases;
+  gsl_matrix_list_t *activations;
+  gsl_matrix_list_t *outputs;
 } network_t;
 
 // network functions
 network_t *init_network(int layers[], int num_layers,
                                       double (*activation)(double));
 void free_network(network_t *net);
-gsl_matrix *feedforward(network_t* net, gsl_matrix *a,
-                    gsl_matrix_list_t *activations, gsl_matrix_list_t *outputs);
+void feedforward(network_t* net, gsl_matrix *a);
+void activateLayer(network_t *net, int l);
+
 void backprop(network_t *net, gsl_matrix *input, gsl_matrix *target,
               gsl_matrix_list_t *weight_grads, gsl_matrix_list_t *bias_grads);
 // auxiliary functions
@@ -50,6 +53,7 @@ void save(network_t *net);
 // matrix functions
 gsl_matrix *rand_gaussian_matrix(size_t rows, size_t cols);
 void map(double (*f)(double), gsl_matrix *m);
+void map_from(double (*f)(double), gsl_matrix *dest, gsl_matrix *src);
 void print_matrix(FILE *f, const gsl_matrix *m);
 bool same_shape(gsl_matrix *a, gsl_matrix *b);
 gsl_matrix_list_t *gsl_matrix_list_malloc(size_t length);
@@ -59,7 +63,7 @@ void gsl_matrix_list_free_matrices(gsl_matrix_list_t *ml); // just the matrices
 gsl_matrix_list_t *init_bias_grads(network_t *net);
 gsl_matrix_list_t *init_weight_grads(network_t *net);
 void print_shape(gsl_matrix *m, const char *msg);
-gsl_matrix_list_t *init_outputs(network_t *net);
-gsl_matrix_list_t *init_activations(network_t *net);
+void init_outputs(network_t *net);
+void init_activations(network_t *net);
 
 #endif

@@ -87,9 +87,7 @@ int net_example() {
   printf("\n%s\n", "Network Overview");
   net = init_network(layers, num_layers, &sigmoid);
   assert(net->num_layers == num_layers);
-  gsl_matrix_list_t *activations = gsl_matrix_list_malloc(num_layers);
-  gsl_matrix_list_t *outputs = gsl_matrix_list_malloc(num_layers-1);
-  gsl_matrix *m1 = feedforward(net, a, activations, outputs);
+  feedforward(net, a);
 
 
   printf("\n%s\n", "WEIGHTS");
@@ -103,18 +101,18 @@ int net_example() {
     printf("layer %d, dim: %zu x %zu\n", i+1, m->size1, m->size2);
   }
   printf("\n%s\n", "ACTIVATIONS");
-  for (int i = 0; i < activations->length; i++) {
-    gsl_matrix *m1 = activations->data[i];
+  for (int i = 0; i < net->activations->length; i++) {
+    gsl_matrix *m1 = net->activations->data[i];
     printf("layer %d, dim: %zu x %zu\n", i, m1->size1, m1->size2);
   }
   printf("\n%s\n", "OUTPUTS");
-  for (int j = 0; j < outputs->length; j++) {
-    gsl_matrix *m2 = outputs->data[j];
+  for (int j = 0; j < net->outputs->length; j++) {
+    gsl_matrix *m2 = net->outputs->data[j];
     printf("layer %d, dim: %zu x %zu\n", j+1, m2->size1, m2->size2);
   }
   printf("\n%s\n", "FINAL OUTPUT");
 
-  print_matrix (stdout, m1);
+  print_matrix (stdout, net->activations->data[net->num_layers-1]);
 
   printf("\n%s\n", "BACKPROP TEST");
   gsl_matrix *y;
@@ -147,9 +145,7 @@ int net_example() {
   gsl_matrix_free(y);
   gsl_matrix_list_free(weight_grads);
   gsl_matrix_list_free(bias_grads);
-  gsl_matrix_list_free(activations);
-  gsl_matrix_list_free(outputs);
-  gsl_matrix_free(m1);
+
 
   free_network(net);
 

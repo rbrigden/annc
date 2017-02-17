@@ -93,8 +93,8 @@ int evaluate(network_t *net, set_loader_t *test_loader) {
   for (size_t m = 0; m < test_loader->total; m++) {
     img = get_next_image(test_loader);
     input = image_to_matrix(img, test_loader->height, test_loader->width);
-    final_activation = feedforward(net, input, NULL, NULL);
-    gsl_matrix_max_index(final_activation, &imax, &jmax);
+    feedforward(net, input);
+    gsl_matrix_max_index(net->activations->data[net->num_layers-1], &imax, &jmax);
     sum += (imax == (size_t)img->label) ? 1 : 0;
   }
   // gsl_matrix_list_free_matrices(activations);
