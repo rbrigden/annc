@@ -6,11 +6,10 @@ void stochastic_gradient_descent(network_t *net, set_loader_t *train_loader,
   for (size_t e = 0; e < epochs; e++) {
     shuffle(train_loader);
     for (int m = 0; m < mini_batches; m++) {
-      // printf("Batch %d\n", m+1);
       update_mini_batch(net, train_loader, mini_batch_size, eta);
     }
-    printf("%s\n", "evaluating");
-    printf("\nEpoch: %zu, accuracy %d / %zu\n", e, evaluate(net, test_loader), test_loader->total);
+    printf("\n%s\n", "evaluating...");
+    printf("Epoch: %zu, accuracy %d / %zu\n", e, evaluate(net, test_loader), test_loader->total);
     shuffle(test_loader);
   }
 }
@@ -39,16 +38,13 @@ void update_mini_batch(network_t *net, set_loader_t *loader,
   gsl_matrix *target;
   image_t *img;
 
-  // initialize local gradients
+  // reset the gradients
   gsl_matrix_list_set_zero(net->weight_grads);
   gsl_matrix_list_set_zero(net->bias_grads);
   gsl_matrix_list_set_zero(net->delta_bias_grads);
   gsl_matrix_list_set_zero(net->delta_weight_grads);
 
-
-
-
-  for (int i = 0; i < mini_batch_size; i++) {
+  for (int m = 0; m < mini_batch_size; m++) {
     img = get_next_image(loader);
     input = image_to_matrix(img, loader->height, loader->width);
     target = mnist_target_matrix(img);
@@ -60,8 +56,8 @@ void update_mini_batch(network_t *net, set_loader_t *loader,
       gsl_matrix_add(net->weight_grads->data[l], net->delta_weight_grads->data[l]);
       gsl_matrix_add(net->bias_grads->data[l], net->delta_bias_grads->data[l]);
     }
-
   }
+  
   for (int l = 0; l < net->num_layers-1; l++) {
     // w -= eta/len(mini_batch) * delta_weight_grad
     double scaler = eta / ((double)mini_batch_size);

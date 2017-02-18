@@ -34,8 +34,10 @@ int train_mnist() {
   }
   train_set = init_set_loader(TRAIN_IMAGES, TRAIN_LABELS);
   test_set = init_set_loader(TEST_IMAGES, TEST_LABELS);
-  stochastic_gradient_descent(net, train_set, test_set, MINI_BATCH_SIZE, EPOCHS, ETA);
 
+  printf("\nEpochs: %d, Eta: %4f, MBS: %d\n\n", EPOCHS, ETA, MINI_BATCH_SIZE);
+
+  stochastic_gradient_descent(net, train_set, test_set, MINI_BATCH_SIZE, EPOCHS, ETA);
   set_loader_free(train_set);
   set_loader_free(test_set);
   free_network(net);
@@ -113,10 +115,6 @@ int net_example() {
 
   printf("\n%s\n", "BACKPROP TEST");
   gsl_matrix *y;
-  gsl_matrix_list_t *weight_grads;
-  gsl_matrix_list_t *bias_grads;
-  weight_grads = gsl_matrix_list_malloc(net->num_layers-1);
-  bias_grads = gsl_matrix_list_malloc(net->num_layers-1);
 
   y = rand_gaussian_matrix(layers[num_layers-1],1);
 
@@ -124,15 +122,15 @@ int net_example() {
   backprop(net, y);
 
   printf("\n%s\n", "WEIGHT GRADS");
-  for (int j = 0; j < weight_grads->length; j++) {
-    gsl_matrix *m2 = weight_grads->data[j];
+  for (int j = 0; j < net->weight_grads->length; j++) {
+    gsl_matrix *m2 = net->weight_grads->data[j];
     printf("layer %d, dim: %zu x %zu\n", j+1, m2->size1, m2->size2);
     // print_matrix(stdout, m2);
   }
 
   printf("\n%s\n", "BIAS GRADS");
-  for (int j = 0; j < bias_grads->length; j++) {
-    gsl_matrix *m2 = bias_grads->data[j];
+  for (int j = 0; j < net->bias_grads->length; j++) {
+    gsl_matrix *m2 = net->bias_grads->data[j];
     // print_matrix(stdout, m2);
     printf("layer %d, dim: %zu x %zu\n", j+1, m2->size1, m2->size2);
   }
@@ -140,10 +138,6 @@ int net_example() {
   // free shit
   gsl_matrix_free(a);
   gsl_matrix_free(y);
-  gsl_matrix_list_free(weight_grads);
-  gsl_matrix_list_free(bias_grads);
-
-
   free_network(net);
 
   return 0;

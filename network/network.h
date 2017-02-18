@@ -65,6 +65,7 @@ double relu(double z);
 // cost functions
 cf_t *use_quad_cost();
 void quad_cost_p(gsl_matrix *dest, gsl_matrix *a, gsl_matrix *y);
+double quad_cost(gsl_matrix *a, gsl_matrix *y);
 
 // auxiliary functions
 void save(network_t *net);

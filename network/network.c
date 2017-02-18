@@ -97,14 +97,10 @@ void backprop(network_t *net, gsl_matrix *target) {
   delta_temp = gsl_matrix_alloc(net->weights[(wgrad_size-1)]->size2,
                                             delta->size2);
 
-  // for (int i = 0; i < delta_bias_grads->length; i++) print_shape(delta_bias_grads->data[i], "bgrads");
   gsl_matrix_memcpy(net->delta_bias_grads->data[bgrad_size-1], delta);
 
   // gsl_blas_dgemm(f1, f2, alpha, A, B, beta, C)
   // C = alpha * f1(A) * f2(B) + beta * C
-  // delta_weight_grads->data[wgrad_size-1] = gsl_matrix_alloc(delta->size1,
-  //                                       (activations->data[asize-2])->size1);
-
   gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, delta,
                   net->activations->data[asize-2], 0.0, net->delta_weight_grads->data[wgrad_size-1]);
 
@@ -112,36 +108,24 @@ void backprop(network_t *net, gsl_matrix *target) {
     gsl_matrix *z = net->outputs->data[zsize-l];
     map(net->activation->f_p, z);
     gsl_matrix *sp = z;
-    // gsl_matrix *delta_temp = gsl_matrix_alloc(net->weights[(wgrad_size-l+1)]->size2,
-    //                                           delta->size2);
     gsl_blas_dgemm(CblasTrans, CblasNoTrans, 1.0, net->weights[(wgrad_size-l+1)],
                     delta, 0.0, delta_temp);
-    // gsl_matrix_free(delta);
     gsl_matrix_mul_elements(delta_temp, sp);
     delta = delta_temp;
     gsl_matrix_memcpy(net->delta_bias_grads->data[bgrad_size-l], delta);
-    // delta_weight_grads->data[wgrad_size-l] = gsl_matrix_alloc(delta->size1,
-    //                                       (activations->data[asize-l-1])->size1);
     gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, delta,
                     net->activations->data[asize-l-1], 0.0, net->delta_weight_grads->data[wgrad_size-l]);
 
   }
   gsl_matrix_free(cost_by_a);
   gsl_matrix_free(delta);
-
-  // free stuff
 }
-
-// void calculateErrorForLayer(network_t *net, int l) {
-//
-// }
 
 // BEGIN MATRIX FUNCTIONS
 
 void print_shape(gsl_matrix *m, const char *msg) {
   printf("%s: %zu x %zu\n", msg, m->size1, m->size2);
 }
-
 
 /*
   check if two gsl_matrix have the same shape
@@ -311,6 +295,7 @@ void save(network_t *net) {
   fclose(f);
 }
 
+// BEGIN ACTIVATION FUNCTIONS
 
 
 af_t *use_sigmoid() {
@@ -333,10 +318,11 @@ double relu(double x) {
 }
 
 
+// BEGIN COST FUNCTIONS
 
 cf_t *use_quad_cost() {
   cf_t *c = (cf_t*)malloc(sizeof(cf_t));
-  // c->f = &quad_cost;
+  c->f = &quad_cost;
   c->f_p = &quad_cost_p;
   return c;
 }
@@ -344,18 +330,22 @@ cf_t *use_quad_cost() {
 // quad_cost_p applies the derivative of the quadratic cost function
 void quad_cost_p(gsl_matrix *dest, gsl_matrix *a, gsl_matrix *y) {
   // calculate a - y
-  // assert(dest != NULL && a != NULL && y != NULL);
-  // assert(same_shape(a, y) && same_shape(y, dest));
+  assert(same_shape(a, y) && same_shape(y, dest));
   gsl_matrix_add(dest, y);  // dest = y
   gsl_matrix_scale(dest, -1.0); // dest = - y
   gsl_matrix_add(dest, a);  // dest = a + (-y) = a - y
 }
 
-// gsl_matrix *quad_cost(gsl_matrix *final_activation,
-//                                  gsl_matrix *targets) {
-//   // a_L - y
-//   assert(same_shape(final_activation, targets));
-//   gsl_matrix_sub(final_activation, targets);
-//   gsl_matrix_memcpy(m, final_activation);
-//   return m;
-// }
+// quad_cost applies the mean squared error cost
+double quad_cost(gsl_matrix *a, gsl_matrix *y) {
+  // a_L - y
+  assert(same_shape(a, y));
+  int r = a->size1;
+  double cost = 0;
+  double delta;
+  for (int i = 0; i < r; i++) {
+    delta = gsl_matrix_get(a, i, 0) - gsl_matrix_get(y, i, 0);
+    cost += pow(delta, 2);
+  }
+  return (cost/((double)r));
+}
