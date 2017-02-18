@@ -70,7 +70,6 @@ double quad_cost(gsl_matrix *a, gsl_matrix *y);
 // auxiliary functions
 void save(network_t *net);
 
-
 // matrix functions
 gsl_matrix *rand_gaussian_matrix(size_t rows, size_t cols);
 void map(double (*f)(double), gsl_matrix *m);

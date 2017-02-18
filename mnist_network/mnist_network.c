@@ -3,15 +3,22 @@
 void stochastic_gradient_descent(network_t *net, set_loader_t *train_loader,
       set_loader_t *test_loader, int mini_batch_size, int epochs, double eta) {
   int mini_batches = (train_loader->total/mini_batch_size);
+  gsl_matrix_list_t *vw = init_weight_grads(net);
+  gsl_matrix_list_t *vb = init_bias_grads(net);
+
   for (size_t e = 0; e < epochs; e++) {
     shuffle(train_loader);
     for (int m = 0; m < mini_batches; m++) {
-      update_mini_batch(net, train_loader, mini_batch_size, eta);
+      update_mini_batch(net, train_loader, vw, vb, mini_batch_size, eta);
     }
+    gsl_matrix_list_set_zero(vw);
+    gsl_matrix_list_set_zero(vb);
     printf("\n%s\n", "evaluating...");
     printf("Epoch: %zu, accuracy %d / %zu\n", e, evaluate(net, test_loader), test_loader->total);
     shuffle(test_loader);
   }
+  gsl_matrix_list_free(vw);
+  gsl_matrix_list_free(vb);
 }
 
 gsl_matrix *image_to_matrix(image_t *img, size_t width, size_t height) {
@@ -32,7 +39,7 @@ gsl_matrix *mnist_target_matrix(image_t *img) {
 }
 
 void update_mini_batch(network_t *net, set_loader_t *loader,
-                                int mini_batch_size, double eta) {
+      gsl_matrix_list_t *vw, gsl_matrix_list_t *vb, int mini_batch_size, double eta) {
 
   gsl_matrix *input;
   gsl_matrix *target;
@@ -57,15 +64,20 @@ void update_mini_batch(network_t *net, set_loader_t *loader,
       gsl_matrix_add(net->bias_grads->data[l], net->delta_bias_grads->data[l]);
     }
   }
-  
-  for (int l = 0; l < net->num_layers-1; l++) {
-    // w -= eta/len(mini_batch) * delta_weight_grad
-    double scaler = eta / ((double)mini_batch_size);
-    gsl_matrix_scale(net->weight_grads->data[l], scaler);
-    gsl_matrix_sub(net->weights[l], net->weight_grads->data[l]);
 
-    gsl_matrix_scale(net->bias_grads->data[l], scaler);
-    gsl_matrix_sub(net->biases[l], net->bias_grads->data[l]);
+  for (int l = 0; l < net->num_layers-1; l++) {
+    // v' = MU * v - eta/len(mini_batch) * delta_weight_grad
+    double eta_scaler = eta / ((double)mini_batch_size);
+    double mu_scaler = MU / ((double)mini_batch_size);
+
+    gsl_matrix_scale(net->weight_grads->data[l], eta_scaler);
+    gsl_matrix_scale(vw->data[l], mu_scaler);
+    gsl_matrix_sub(vw->data[l], net->weight_grads->data[l]);
+    gsl_matrix_add(net->weights[l], vw->data[l]);
+    gsl_matrix_scale(net->bias_grads->data[l], eta_scaler);
+    gsl_matrix_scale(vb->data[l], mu_scaler);
+    gsl_matrix_sub(vb->data[l], net->bias_grads->data[l]);
+    gsl_matrix_add(net->biases[l], vb->data[l]);
   }
 }
 

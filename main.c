@@ -1,7 +1,7 @@
 #include "mnist_network/mnist_network.h"
 
-#define EPOCHS 100
-#define ETA 0.5
+#define EPOCHS 30
+#define ETA 3.0
 #define MINI_BATCH_SIZE 100
 #define LAYERS {(28*28), 30, 30, 10}
 #define NUM_LAYERS 4
