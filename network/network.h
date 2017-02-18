@@ -85,5 +85,6 @@ gsl_matrix_list_t *init_weight_grads(network_t *net);
 void print_shape(gsl_matrix *m, const char *msg);
 void init_outputs(network_t *net);
 void init_activations(network_t *net);
+void gsl_matrix_list_set_zero(gsl_matrix_list_t *ml);
 
 #endif

@@ -1,18 +1,14 @@
 #include "mnist_network/mnist_network.h"
 
-#define EPOCHS 30
-#define ETA 1.0
-#define MINI_BATCH_SIZE 50
+#define EPOCHS 100
+#define ETA 0.5
+#define MINI_BATCH_SIZE 100
 #define LAYERS {(28*28), 30, 30, 10}
 #define NUM_LAYERS 4
-
-
 
 static int net_example();
 static int train_mnist();
 static int mnist_example_load();
-
-
 
 int main() {
   train_mnist();
@@ -26,7 +22,9 @@ int train_mnist() {
   int num_layers = NUM_LAYERS;
   int layers[] = LAYERS;
   printf("%s\n", "Initializing network");
-  net = init_network(layers, num_layers, &sigmoid);
+  cf_t *cost = use_quad_cost();
+  af_t *activation = use_sigmoid();
+  net = init_network(layers, num_layers, activation, cost);
 
   if (verify_data()) {
     printf("%s\n", "woohoo, verified");
@@ -51,7 +49,9 @@ int mnist_example_load() {
     int num_layers = 3;
     int layers[] = {(28*28),30,10};
     printf("%s\n", "Initializing network");
-    net = init_network(layers, num_layers, &sigmoid);
+    cf_t *cost = use_quad_cost();
+    af_t *activation = use_sigmoid();
+    net = init_network(layers, num_layers, activation, cost);
 
     if (verify_data()) {
       printf("%s\n", "woohoo, verified");
@@ -74,9 +74,6 @@ int mnist_example_load() {
 }
 
 
-
-
-
 int net_example() {
   network_t *net;
   gsl_matrix *a;
@@ -85,7 +82,7 @@ int net_example() {
   printf("%s\n", "Initializing network");
   a = rand_gaussian_matrix(layers[0],1);
   printf("\n%s\n", "Network Overview");
-  net = init_network(layers, num_layers, &sigmoid);
+  net = init_network(layers, num_layers, use_sigmoid(), use_quad_cost());
   assert(net->num_layers == num_layers);
   feedforward(net, a);
 
@@ -123,8 +120,8 @@ int net_example() {
 
   y = rand_gaussian_matrix(layers[num_layers-1],1);
 
-
-  backprop(net, a, y, weight_grads, bias_grads);
+  feedforward(net, a);
+  backprop(net, y);
 
   printf("\n%s\n", "WEIGHT GRADS");
   for (int j = 0; j < weight_grads->length; j++) {

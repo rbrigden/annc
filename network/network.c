@@ -257,6 +257,12 @@ void gsl_matrix_list_free_matrices(gsl_matrix_list_t *ml) {
   }
 }
 
+void gsl_matrix_list_set_zero(gsl_matrix_list_t *ml) {
+  for (int i = 0; i < ml->length; i++) {
+    gsl_matrix_set_all(ml->data[i], 0.0);
+  }
+}
+
 /*
   map a function f: double -> double onto a gsl_matrix
 */
