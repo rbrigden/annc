@@ -14,8 +14,11 @@ void stochastic_gradient_descent(network_t *net, set_loader_t *train_loader,
     gsl_matrix_list_set_zero(vw);
     gsl_matrix_list_set_zero(vb);
     printf("\n%s\n", "evaluating...");
+    printf("%s: %4f\n", "cost", net->obj_fun);
     printf("Epoch: %zu, accuracy %d / %zu\n", e, evaluate(net, test_loader), test_loader->total);
     shuffle(test_loader);
+    net->obj_fun = 0;
+
   }
   gsl_matrix_list_free(vw);
   gsl_matrix_list_free(vb);
@@ -50,13 +53,14 @@ void update_mini_batch(network_t *net, set_loader_t *loader,
   gsl_matrix_list_set_zero(net->bias_grads);
   gsl_matrix_list_set_zero(net->delta_bias_grads);
   gsl_matrix_list_set_zero(net->delta_weight_grads);
-
+  double mbc = 0;
   for (int m = 0; m < mini_batch_size; m++) {
     img = get_next_image(loader);
     input = image_to_matrix(img, loader->height, loader->width);
     target = mnist_target_matrix(img);
     feedforward(net, input);
     backprop(net, target);
+    mbc += (*net->cost->f)(net->activations->data[net->num_layers-1], target);
     gsl_matrix_free(input);
     gsl_matrix_free(target);
     for (int l = 0; l < net->num_layers-1; l++) {
@@ -64,7 +68,7 @@ void update_mini_batch(network_t *net, set_loader_t *loader,
       gsl_matrix_add(net->bias_grads->data[l], net->delta_bias_grads->data[l]);
     }
   }
-
+  net->obj_fun += (mbc / mini_batch_size);
   for (int l = 0; l < net->num_layers-1; l++) {
     // v' = MU * v - eta/len(mini_batch) * delta_weight_grad
     double eta_scaler = eta / ((double)mini_batch_size);

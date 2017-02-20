@@ -1,7 +1,7 @@
 #include "mnist_network/mnist_network.h"
 
 #define EPOCHS 30
-#define ETA 3.0
+#define ETA 1.0
 #define MINI_BATCH_SIZE 100
 #define LAYERS {(28*28), 30, 30, 10}
 #define NUM_LAYERS 4
@@ -34,6 +34,9 @@ int train_mnist() {
   }
   train_set = init_set_loader(TRAIN_IMAGES, TRAIN_LABELS);
   test_set = init_set_loader(TEST_IMAGES, TEST_LABELS);
+  // test_set = init_set_loader(TRAIN_IMAGES, TRAIN_LABELS);
+  // train_set->total = 100;
+  // test_set->total = 100;
 
   printf("\nEpochs: %d, Eta: %4f, MBS: %d\n\n", EPOCHS, ETA, MINI_BATCH_SIZE);
 

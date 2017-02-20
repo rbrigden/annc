@@ -13,6 +13,7 @@ network_t *init_network(int layers[], int num_layers, af_t *activation, cf_t *co
   net->biases = (gsl_matrix**) malloc(sizeof(gsl_matrix*)*(num_layers-1));
   net->activation = activation;
   net->cost = cost;
+  net->obj_fun = 0;
   // Generate random biases and weights.
   for (int l = 1; l < num_layers; l++) {
     net->biases[l-1] = rand_gaussian_matrix(layers[l], 1);
@@ -160,9 +161,11 @@ gsl_matrix *rand_gaussian_matrix(size_t rows, size_t cols) {
   m1 = gsl_matrix_calloc (rows, cols);
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < cols; j++) {
-       gsl_matrix_set (m1, i, j, gsl_ran_gaussian(r, SIGMA));
+       double x = gsl_ran_gaussian(r, SIGMA);
+       gsl_matrix_set (m1, i, j, x/sqrt(cols));
     }
   }
+  print_matrix(stdout, m1);
   gsl_rng_free(r);
   return m1;
 }

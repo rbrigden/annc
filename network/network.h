@@ -35,6 +35,7 @@ typedef struct cf {
 typedef struct network {
   af_t *activation;
   cf_t *cost;
+  double obj_fun;
 
   int num_layers;
   int layers[MAX_LAYERS];
