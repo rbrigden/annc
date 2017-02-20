@@ -89,11 +89,12 @@ void backprop(network_t *net, gsl_matrix *target) {
 
   // propogate backward thru the network
   gsl_matrix *cost_by_a = gsl_matrix_calloc(target->size1, target->size2);
-  (*net->cost->f_p)(cost_by_a, net->activations->data[asize-1], target);
-  gsl_matrix *sd_outputs = matrix_copy(net->outputs->data[zsize-1]);
-  map(net->activation->f_p, sd_outputs);
-  gsl_matrix_mul_elements(cost_by_a, sd_outputs);
-  gsl_matrix_free(sd_outputs);
+  (*net->cost->f_p)(net->activation, cost_by_a, net->activations->data[asize-1],
+                                        target, net->outputs->data[zsize-1]);
+  // gsl_matrix *sd_outputs = matrix_copy(net->outputs->data[zsize-1]);
+  // map(net->activation->f_p, sd_outputs);
+  // gsl_matrix_mul_elements(cost_by_a, sd_outputs);
+  // gsl_matrix_free(sd_outputs);
   delta = cost_by_a;
   delta_temp = gsl_matrix_alloc(net->weights[(wgrad_size-1)]->size2,
                                             delta->size2);
@@ -165,7 +166,6 @@ gsl_matrix *rand_gaussian_matrix(size_t rows, size_t cols) {
        gsl_matrix_set (m1, i, j, x/sqrt(cols));
     }
   }
-  print_matrix(stdout, m1);
   gsl_rng_free(r);
   return m1;
 }
@@ -331,12 +331,15 @@ cf_t *use_quad_cost() {
 }
 
 // quad_cost_p applies the derivative of the quadratic cost function
-void quad_cost_p(gsl_matrix *dest, gsl_matrix *a, gsl_matrix *y) {
+void quad_cost_p(af_t *af, gsl_matrix *dest, gsl_matrix *a,
+                                      gsl_matrix *y, gsl_matrix *z) {
   // calculate a - y
   assert(same_shape(a, y) && same_shape(y, dest));
   gsl_matrix_add(dest, y);  // dest = y
   gsl_matrix_scale(dest, -1.0); // dest = - y
   gsl_matrix_add(dest, a);  // dest = a + (-y) = a - y
+  map(af->f_p, z);
+  gsl_matrix_mul_elements(dest, z);
 }
 
 // quad_cost applies the mean squared error cost
@@ -349,6 +352,44 @@ double quad_cost(gsl_matrix *a, gsl_matrix *y) {
   for (int i = 0; i < r; i++) {
     delta = gsl_matrix_get(a, i, 0) - gsl_matrix_get(y, i, 0);
     cost += pow(delta, 2);
+  }
+  return (cost/((double)r));
+}
+
+cf_t *use_cross_entropy_cost() {
+  cf_t *c = (cf_t*)malloc(sizeof(cf_t));
+  c->f = &cross_entropy;
+  c->f_p = &cross_entropy_p;
+  return c;
+}
+
+// cross_entropy_p applies the derivative of the cross entropy cost function
+void cross_entropy_p(af_t *af, gsl_matrix *dest, gsl_matrix *a,
+                                      gsl_matrix *y, gsl_matrix *z) {
+  // calculate a - y
+  assert(same_shape(a, y) && same_shape(y, dest));
+  gsl_matrix_add(dest, y);  // dest = y
+  gsl_matrix_scale(dest, -1.0); // dest = - y
+  gsl_matrix_add(dest, a);  // dest = a + (-y) = a - y
+}
+
+double ce(double a, double y) {
+  double res = (-y * log(a)) - ((1-y) * log(1-a));
+  if (gsl_isnan(res)) {
+    return 0;
+  } else {
+    return res;
+  }
+}
+
+// cross_entropy applies the cross entropy cost
+double cross_entropy(gsl_matrix *a, gsl_matrix *y) {
+  // a_L - y
+  assert(same_shape(a, y));
+  int r = a->size1;
+  double cost = 0;
+  for (int i = 0; i < r; i++) {
+    cost += ce(gsl_matrix_get(a, i, 0), gsl_matrix_get(y, i, 0));
   }
   return (cost/((double)r));
 }

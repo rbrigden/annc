@@ -2,7 +2,7 @@
 
 #define EPOCHS 30
 #define ETA 1.0
-#define MINI_BATCH_SIZE 100
+#define MINI_BATCH_SIZE 1000
 #define LAYERS {(28*28), 30, 30, 10}
 #define NUM_LAYERS 4
 
@@ -22,7 +22,9 @@ int train_mnist() {
   int num_layers = NUM_LAYERS;
   int layers[] = LAYERS;
   printf("%s\n", "Initializing network");
-  cf_t *cost = use_quad_cost();
+  // cf_t *cost = use_quad_cost();
+  cf_t *cost = use_cross_entropy_cost();
+
   af_t *activation = use_sigmoid();
   net = init_network(layers, num_layers, activation, cost);
 

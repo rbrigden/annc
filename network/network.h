@@ -29,7 +29,7 @@ typedef struct af {
 
 typedef struct cf {
   double (*f)(gsl_matrix*, gsl_matrix*); // cost function
-  void (*f_p)(gsl_matrix*, gsl_matrix*, gsl_matrix*); // cost function prime
+  void (*f_p)(af_t*, gsl_matrix*, gsl_matrix*, gsl_matrix*, gsl_matrix*); // cost function prime
 } cf_t;
 
 typedef struct network {
@@ -65,8 +65,16 @@ double relu(double z);
 
 // cost functions
 cf_t *use_quad_cost();
-void quad_cost_p(gsl_matrix *dest, gsl_matrix *a, gsl_matrix *y);
+cf_t *use_cross_entropy_cost();
+
+void quad_cost_p(af_t *af, gsl_matrix *dest, gsl_matrix *a,
+                                      gsl_matrix *y, gsl_matrix *z);
 double quad_cost(gsl_matrix *a, gsl_matrix *y);
+
+void cross_entropy_p(af_t *af, gsl_matrix *dest, gsl_matrix *a,
+                                      gsl_matrix *y, gsl_matrix *z);
+double cross_entropy(gsl_matrix *a, gsl_matrix *y);
+
 
 // auxiliary functions
 void save(network_t *net);
