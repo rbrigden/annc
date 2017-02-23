@@ -1,4 +1,4 @@
-#include "mnist_network.h"
+#include "training.h"
 
 void stochastic_gradient_descent(network_t *net, set_loader_t *train_loader,
       set_loader_t *test_loader, int mini_batch_size, int epochs, double eta) {

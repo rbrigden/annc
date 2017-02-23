@@ -1,5 +1,5 @@
-#ifndef __MNIST_LOADER_H_
-#define  __MNIST_LOADER_H_
+#ifndef __TRAINING_H__
+#define  __TRAINING_H_
 
 #include "../mnist/mnist_loader.h"
 #include "../network/network.h"
