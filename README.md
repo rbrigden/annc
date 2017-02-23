@@ -20,6 +20,7 @@ __/mnist/mnist.h__ provides a simple data loader for the MNIST data set that is 
 
 ## Sample training
 
+```
 $ ./annc
 Initializing network
 woohoo, verified
@@ -111,67 +112,7 @@ evaluating...
 cost: 4.842447
 Epoch: 15, accuracy 8755 / 10000
 
-evaluating...
-cost: 4.931275
-Epoch: 16, accuracy 8788 / 10000
-
-evaluating...
-cost: 4.775373
-Epoch: 17, accuracy 8832 / 10000
-
-evaluating...
-cost: 4.691695
-Epoch: 18, accuracy 8743 / 10000
-
-evaluating...
-cost: 4.791714
-Epoch: 19, accuracy 8686 / 10000
-
-evaluating...
-cost: 4.712357
-Epoch: 20, accuracy 8806 / 10000
-
-evaluating...
-cost: 4.552620
-Epoch: 21, accuracy 8856 / 10000
-
-evaluating...
-cost: 4.444064
-Epoch: 22, accuracy 8916 / 10000
-
-evaluating...
-cost: 4.412344
-Epoch: 23, accuracy 8916 / 10000
-
-evaluating...
-cost: 4.488347
-Epoch: 24, accuracy 8856 / 10000
-
-evaluating...
-cost: 4.436550
-Epoch: 25, accuracy 8940 / 10000
-
-evaluating...
-cost: 4.195865
-Epoch: 26, accuracy 8977 / 10000
-
-evaluating...
-cost: 4.104246
-Epoch: 27, accuracy 8951 / 10000
-
-evaluating...
-cost: 4.237411
-Epoch: 28, accuracy 8946 / 10000
-
-evaluating...
-cost: 4.310728
-Epoch: 29, accuracy 8946 / 10000
-
-evaluating...
-cost: 4.265719
-Epoch: 30, accuracy 8989 / 10000
-
-...
+....
 
 evaluating...
 cost: 3.646227
