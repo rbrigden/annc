@@ -36,6 +36,10 @@
 *.x86_64
 *.hex
 
+#Mac files
+*.DS_Store
+.clang_complete
+
 # Debug files
 *.dSYM/
 *.su
