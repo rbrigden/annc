@@ -1,8 +1,3 @@
-#ifndef __MNIST_LOADER_H__
-#define  __MNIST_LOADER_H__
-
-#include "../csapp.h"
-#include <stdbool.h>
 
 /**
 MNIST Handrwitten Digits Dataset Loader
@@ -64,6 +59,11 @@ Pixels are organized row-wise. Pixel values are 0 to 255. 0 means background
 (white), 255 means foreground (black).
 **/
 
+#ifndef __MNIST_LOADER_H__
+#define  __MNIST_LOADER_H__
+
+#include "../csapp.h"
+#include <stdbool.h>
 
 // data files and respective magic numbers
 

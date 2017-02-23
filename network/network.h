@@ -49,6 +49,9 @@ typedef struct network {
   gsl_matrix_list_t *delta_bias_grads;
 } network_t;
 
+const gsl_rng_type * T;
+gsl_rng * r;
+
 // network functions
 network_t *init_network(int layers[], int num_layers, af_t *activation, cf_t *cost);
 void free_network(network_t *net);
@@ -59,9 +62,12 @@ void backprop(network_t *net, gsl_matrix *target);
 
 // activation functions
 af_t *use_sigmoid();
+af_t *use_relu();
+
 double sigmoid(double z);
 double sigmoid_prime(double x);
 double relu(double z);
+double relu_prime(double x);
 
 // cost functions
 cf_t *use_quad_cost();
@@ -95,5 +101,6 @@ void print_shape(gsl_matrix *m, const char *msg);
 void init_outputs(network_t *net);
 void init_activations(network_t *net);
 void gsl_matrix_list_set_zero(gsl_matrix_list_t *ml);
+double euclidean_norm(gsl_matrix *m);
 
 #endif

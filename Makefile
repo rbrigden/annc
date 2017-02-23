@@ -3,7 +3,7 @@
 #
 
 CC=gcc
-CFLAGS = -Wall -std=c99 -ggdb -I/usr/local/include
+CFLAGS =  -Wall -std=c99  -I/usr/local/include
 LDFLAGS= -L/usr/local/lib
 LIBS= -lgsl -lm -ldl
 OBJS1=  mnist/mnist_loader.o network/network.o mnist_network/mnist_network.o  main.o
@@ -32,8 +32,8 @@ tests.o: tests.c
 main.o: main.c
 	$(CC) $(CFLAGS) -c main.c
 
-clean: $(SUBDIRS)
-	(rm -f *~ *.o *.out  *.tar *.zip *.gzip *.bzip *.gz;)
+clean:
 
-$(SUBDIRS):
-	$(MAKE) -C $(SUBDIRS) clean 
+clean_network:
+	(cd network; rm -f *~ *.o *.out  *.tar *.zip *.gzip *.bzip *.gz)
+	 $(MAKE) -C $(DIRS) clean

@@ -68,11 +68,21 @@ void update_mini_batch(network_t *net, set_loader_t *loader,
       gsl_matrix_add(net->bias_grads->data[l], net->delta_bias_grads->data[l]);
     }
   }
-  net->obj_fun += (mbc / mini_batch_size);
+  // printf("cost added %d: %lf\n", l, );
+  net->obj_fun += (mbc / (double)(mini_batch_size));
   for (int l = 0; l < net->num_layers-1; l++) {
     // v' = MU * v - eta/len(mini_batch) * delta_weight_grad
+    // printf("grad norm %d: %lf\n", l, euclidean_norm(net->weight_grads->data[l]));
+    // double threshold = 1e99;
+    // double norm = euclidean_norm(net->weight_grads->data[l]);
+    // if (norm > threshold) {
+    //   gsl_matrix_scale(net->weight_grads->data[l], threshold/norm);
+    // }
+    //  grad = grad * threshold/norm(grad)
+    double weight_decay = 1.0 - (((double)eta * (double)LAMBDA)/((double)mini_batch_size));
     double eta_scaler = eta / ((double)mini_batch_size);
     double mu_scaler = MU / ((double)mini_batch_size);
+    gsl_matrix_scale(net->weights[l], weight_decay);
 
     gsl_matrix_scale(net->weight_grads->data[l], eta_scaler);
     gsl_matrix_scale(vw->data[l], mu_scaler);

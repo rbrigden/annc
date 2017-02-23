@@ -2,7 +2,7 @@
 # Makefile for hw0 11-364
 #
 
-CFLAGS = -Wall -std=c99 -ggdb -I/usr/local/include
+CFLAGS =    -Wall -std=c99  -I/usr/local/include
 LDFLAGS= -L/usr/local/lib
 LIBS= -lgsl -lm -ldl
 OBS = mnist_network.o

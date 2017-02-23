@@ -5,7 +5,7 @@
 #include "../network/network.h"
 
 #define MU 0.9
-
+#define LAMBDA 0.1
 
 void stochastic_gradient_descent(network_t *net, set_loader_t *train_loader,
       set_loader_t *test_loader, int mini_batch_size, int epochs, double eta);

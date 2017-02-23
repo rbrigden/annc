@@ -6,6 +6,10 @@
   initialize a network
 */
 network_t *init_network(int layers[], int num_layers, af_t *activation, cf_t *cost) {
+
+  gsl_rng_env_setup();
+  T = gsl_rng_default;
+  r = gsl_rng_alloc(T);
   network_t *net = (network_t*) malloc(sizeof(network_t));
   net->num_layers = num_layers;
   memcpy(net->layers, layers, num_layers*sizeof(int));
@@ -33,6 +37,8 @@ network_t *init_network(int layers[], int num_layers, af_t *activation, cf_t *co
  free a network
 */
 void free_network(network_t* net) {
+  gsl_rng_free(r);
+
   for (int i = 0; i < net->num_layers-1; i++) {
     gsl_matrix_free(net->weights[i]);
     gsl_matrix_free(net->biases[i]);
@@ -153,11 +159,7 @@ void print_matrix(FILE *f, const gsl_matrix *m) {
 */
 gsl_matrix *rand_gaussian_matrix(size_t rows, size_t cols) {
   gsl_matrix *m1;
-  const gsl_rng_type * T;
-  gsl_rng * r;
-  gsl_rng_env_setup();
-  T = gsl_rng_default;
-  r = gsl_rng_alloc(T);
+
 
   m1 = gsl_matrix_calloc (rows, cols);
   for (int i = 0; i < rows; i++) {
@@ -166,7 +168,6 @@ gsl_matrix *rand_gaussian_matrix(size_t rows, size_t cols) {
        gsl_matrix_set (m1, i, j, x/sqrt(cols));
     }
   }
-  gsl_rng_free(r);
   return m1;
 }
 
@@ -277,6 +278,16 @@ void map_from(double (*f)(double), gsl_matrix *dest, gsl_matrix *src) {
   }
 }
 
+double euclidean_norm(gsl_matrix *m) {
+  double sum = 0;
+  for (size_t i = 0; i < m->size1; i++) {
+    for (size_t j = 0; j < m->size2; j++) {
+      sum += pow(2, gsl_matrix_get(m, i, j));
+    }
+  }
+  return sum;
+}
+
 // BEGIN AUXILIARY FUNCTIONS
 
 
@@ -308,6 +319,13 @@ af_t *use_sigmoid() {
   return a;
 }
 
+af_t *use_relu() {
+  af_t *a = (af_t*)malloc(sizeof(af_t));
+  a->f = &relu;
+  a->f_p = &relu_prime;
+  return a;
+}
+
 double sigmoid_prime(double x) {
   return (sigmoid(x) * (1.0 - sigmoid(x)));
 }
@@ -318,6 +336,10 @@ double sigmoid(double x) {
 
 double relu(double x) {
   return (x > 0.0) ? x : 0;
+}
+
+double relu_prime(double x) {
+  return (x > 0.0) ? 1 : 0;
 }
 
 

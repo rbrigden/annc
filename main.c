@@ -1,7 +1,7 @@
 #include "mnist_network/mnist_network.h"
 
-#define EPOCHS 30
-#define ETA 1.0
+#define EPOCHS 100
+#define ETA 0.5
 #define MINI_BATCH_SIZE 1000
 #define LAYERS {(28*28), 30, 30, 10}
 #define NUM_LAYERS 4
@@ -24,8 +24,9 @@ int train_mnist() {
   printf("%s\n", "Initializing network");
   // cf_t *cost = use_quad_cost();
   cf_t *cost = use_cross_entropy_cost();
-
   af_t *activation = use_sigmoid();
+  // af_t *activation = use_relu();
+
   net = init_network(layers, num_layers, activation, cost);
 
   if (verify_data()) {
