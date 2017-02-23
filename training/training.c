@@ -1,5 +1,13 @@
 #include "training.h"
 
+
+/*
+  stochastic_gradient_descent optimizes the set of weights and biases
+  through through the gradient descent algorithm and performs updates
+  after a specified mini_batch_size number of samples have been fed forward
+  and backpropogated through the network, and thus updating the gradient
+  with respect to the weights and the biases.
+*/
 void stochastic_gradient_descent(network_t *net, set_loader_t *train_loader,
       set_loader_t *test_loader, int mini_batch_size, int epochs, double eta) {
   int mini_batches = (train_loader->total/mini_batch_size);
@@ -18,7 +26,6 @@ void stochastic_gradient_descent(network_t *net, set_loader_t *train_loader,
     printf("Epoch: %zu, accuracy %d / %zu\n", e, evaluate(net, test_loader), test_loader->total);
     shuffle(test_loader);
     net->obj_fun = 0;
-
   }
   gsl_matrix_list_free(vw);
   gsl_matrix_list_free(vb);
@@ -48,7 +55,7 @@ void update_mini_batch(network_t *net, set_loader_t *loader,
   gsl_matrix *target;
   image_t *img;
 
-  // reset the gradients
+  // reset the delta gradients
   gsl_matrix_list_set_zero(net->weight_grads);
   gsl_matrix_list_set_zero(net->bias_grads);
   gsl_matrix_list_set_zero(net->delta_bias_grads);
@@ -68,22 +75,23 @@ void update_mini_batch(network_t *net, set_loader_t *loader,
       gsl_matrix_add(net->bias_grads->data[l], net->delta_bias_grads->data[l]);
     }
   }
-  // printf("cost added %d: %lf\n", l, );
+  // accumulate the cost
   net->obj_fun += (mbc / (double)(mini_batch_size));
+
+  // perform updates before completing mini-batch
   for (int l = 0; l < net->num_layers-1; l++) {
-    // v' = MU * v - eta/len(mini_batch) * delta_weight_grad
-    // printf("grad norm %d: %lf\n", l, euclidean_norm(net->weight_grads->data[l]));
-    // double threshold = 1e99;
-    // double norm = euclidean_norm(net->weight_grads->data[l]);
-    // if (norm > threshold) {
-    //   gsl_matrix_scale(net->weight_grads->data[l], threshold/norm);
-    // }
-    //  grad = grad * threshold/norm(grad)
-    double weight_decay = 1.0 - (((double)eta * (double)LAMBDA)/((double)mini_batch_size));
-    double eta_scaler = eta / ((double)mini_batch_size);
-    double mu_scaler = MU / ((double)mini_batch_size);
+    double weight_decay;
+    double eta_scaler;
+    double mu_scaler;
+
+    // L2 regularization
+    weight_decay = 1.0 - (((double)eta * (double)LAMBDA)/((double)mini_batch_size));
     gsl_matrix_scale(net->weights[l], weight_decay);
 
+    // weight and bias update with momentum
+    // v' = MU * v - eta/len(mini_batch) * delta_weight_grad
+    eta_scaler = eta / ((double)mini_batch_size);
+    mu_scaler = MU / ((double)mini_batch_size);
     gsl_matrix_scale(net->weight_grads->data[l], eta_scaler);
     gsl_matrix_scale(vw->data[l], mu_scaler);
     gsl_matrix_sub(vw->data[l], net->weight_grads->data[l]);
@@ -95,6 +103,11 @@ void update_mini_batch(network_t *net, set_loader_t *loader,
   }
 }
 
+
+/*
+  evaluate returns 1 if the network correctly predicts a test image
+  or returns 0 if otherwise.
+*/
 int evaluate(network_t *net, set_loader_t *test_loader) {
   gsl_matrix *input;
   size_t imax, jmax;

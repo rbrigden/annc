@@ -1,5 +1,5 @@
 #
-# Makefile for hw0 11-364
+# Makefile for network
 #
 
 CFLAGS =  -Wall -std=c99  -I/usr/local/include

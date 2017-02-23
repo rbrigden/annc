@@ -1,4 +1,3 @@
-
 /**
 MNIST Handrwitten Digits Dataset Loader
 
@@ -59,10 +58,10 @@ Pixels are organized row-wise. Pixel values are 0 to 255. 0 means background
 (white), 255 means foreground (black).
 **/
 
-#ifndef __MNIST_LOADER_H__
-#define  __MNIST_LOADER_H__
+#ifndef __MNIST_H__
+#define  __MNIST_H__
 
-#include "../csapp.h"
+#include "../lib/csapp.h"
 #include <stdbool.h>
 
 // data files and respective magic numbers
@@ -80,8 +79,8 @@ Pixels are organized row-wise. Pixel values are 0 to 255. 0 means background
 #define TEST_LABELS_MN 0x00000801
 
 typedef struct image {
-  uint8_t *data;
-  uint8_t label;
+  uint8_t *data;      // image data
+  uint8_t label;      // image label
 } image_t;
 
 typedef struct set_loader {
@@ -91,8 +90,8 @@ typedef struct set_loader {
   image_t **images;   // images structures
   int *access_order;  // randomized indeces
   size_t data_size;   // data size
-  size_t height;
-  size_t width;
+  size_t height;      // height of each image (pixels)
+  size_t width;       // width of each image (pixels)
 } set_loader_t;
 
 bool verify_data();

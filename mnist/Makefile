@@ -2,15 +2,15 @@
 # Makefile for hw0 11-364
 #
 
-CFLAGS =   -Wall -std=c99  -I/usr/local/include
+CFLAGS = -Wall -std=c99  -I/usr/local/include
 LDFLAGS= -L/usr/local/lib
 LIBS= -lgsl -lm -ldl
-OBS = mnist_loader.o
+OBS = mnist.o
 
-all: mnist_loader
+all: mnist
 
-mnist_loader: $(OBS)
-	$(CC) $(CFLAGS) -o mnist_loader.o -c  mnist_loader.c
+mnist: $(OBS)
+	$(CC) $(CFLAGS) -o mnist.o -c  mnist.c
 
 clean:
 	rm -f *~ *.o *.out  *.tar *.zip *.gzip *.bzip *.gz

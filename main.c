@@ -1,4 +1,4 @@
-#include "mnist_network/mnist_network.h"
+#include "training/training.h"
 
 #define EPOCHS 100
 #define ETA 0.5
@@ -22,10 +22,9 @@ int train_mnist() {
   int num_layers = NUM_LAYERS;
   int layers[] = LAYERS;
   printf("%s\n", "Initializing network");
-  // cf_t *cost = use_quad_cost();
+
   cf_t *cost = use_cross_entropy_cost();
   af_t *activation = use_sigmoid();
-  // af_t *activation = use_relu();
 
   net = init_network(layers, num_layers, activation, cost);
 
@@ -37,9 +36,6 @@ int train_mnist() {
   }
   train_set = init_set_loader(TRAIN_IMAGES, TRAIN_LABELS);
   test_set = init_set_loader(TEST_IMAGES, TEST_LABELS);
-  // test_set = init_set_loader(TRAIN_IMAGES, TRAIN_LABELS);
-  // train_set->total = 100;
-  // test_set->total = 100;
 
   printf("\nEpochs: %d, Eta: %4f, MBS: %d\n\n", EPOCHS, ETA, MINI_BATCH_SIZE);
 
@@ -131,17 +127,15 @@ int net_example() {
   for (int j = 0; j < net->weight_grads->length; j++) {
     gsl_matrix *m2 = net->weight_grads->data[j];
     printf("layer %d, dim: %zu x %zu\n", j+1, m2->size1, m2->size2);
-    // print_matrix(stdout, m2);
   }
 
   printf("\n%s\n", "BIAS GRADS");
   for (int j = 0; j < net->bias_grads->length; j++) {
     gsl_matrix *m2 = net->bias_grads->data[j];
-    // print_matrix(stdout, m2);
     printf("layer %d, dim: %zu x %zu\n", j+1, m2->size1, m2->size2);
   }
 
-  // free shit
+  // free stuff
   gsl_matrix_free(a);
   gsl_matrix_free(y);
   free_network(net);

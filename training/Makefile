@@ -1,16 +1,16 @@
 #
-# Makefile for hw0 11-364
+# Makefile for training
 #
 
 CFLAGS =    -Wall -std=c99  -I/usr/local/include
 LDFLAGS= -L/usr/local/lib
 LIBS= -lgsl -lm -ldl
-OBS = mnist_network.o
+OBS = training.o
 
-all: mnist_network
+all: training 
 
-mnist_network: $(OBS)
-	$(CC) $(CFLAGS) -o mnist_network.o -c  mnist_network.c
+training: $(OBS)
+	$(CC) $(CFLAGS) -o training.o -c  training.c
 
 clean:
 	rm -f *~ *.o *.out  *.tar *.zip *.gzip *.bzip *.gz

@@ -1,4 +1,4 @@
-#include "mnist_loader.h"
+#include "mnist.h"
 #include <assert.h>
 
 /*
@@ -166,39 +166,25 @@ void image_print(image_t *img, int dim) {
   printf("%s\n", "");
 }
 
-// int main() {
-//
-//   set_loader_t *set;
-//   if (verify_data()) {
-//     printf("%s\n", "woohoo, verified");
-//   } else {
-//     printf("%s\n", "whoops, not verified");
-//   }
-//
-//   set = init_set_loader(TRAIN_IMAGES, TRAIN_LABELS);
-//   printf("%s\n", "No shuffle");
-//   for (int i = 0; i < 5; i++) image_print(get_next_image(set), set->height);
-//   shuffle(set);
-//   printf("%s\n", "Post shuffle");
-//   for (int i = 0; i < 5; i++) image_print(get_next_image(set), set->height);
-//   set_loader_free(set);
-//
-//   return 0;
-// }
-
 
 // AUXILIARY FUNCTIONS
 
+/*
+  swap swaps ints at indeces b and c in a
+*/
 void swap(int *a, int b, int c) {
   int d = a[b];
   a[b] = a[c];
   a[c] = d;
 }
 
+/*
+  shuffle_index_array shuffles the elements of an int array using
+  the Fisher-Yates algorithm http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
+*/
 void shuffle_index_array(int *arr, int size) {
     int tmp;
     // Fisher-Yates shuffle the indices.
-    // http://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
     for (int i = size-1; i > 0; i--) {
         tmp = rand() % (i + 1);
         swap(arr, i, tmp);
