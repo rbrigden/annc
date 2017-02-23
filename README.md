@@ -1,17 +1,16 @@
-# HW0 of 11-364
+# annc
 
 ## Objective
 
-The original assignment set forth instructed students to implement a feedforward
-artificial neural network (ANN) in a relatively low level language or framework.
+Implement a feedforward artificial neural network (ANN) in a relatively low level language or framework.
 Although higher level scripting languages such as Python and Lua have wrapped heavily
-optimized libraries that perform the same functions, the goal of this assignment is to truly understand the theoretical underpinnings of feedforward neural networks by writing the routines
-from scratch (almost).
+optimized libraries that perform the same functions, it is important to implement these
+core routines from scratch to truly understand the theoretical underpinnings of feedforward
+neural networks.
 
 ## Implementation
 
-Although the original assignment suggested first implementing the network in the Cython
-language, I decided to move to straight C. I wanted to ensure that I would have the time to both implement and debug as well as experiment with improvements to the vanilla network. My implementation uses the GNU Science Library (GSL) to perform matrix operations and in some cases directly calls on the seminal BLAS library. The code is broken up into three discrete modules as follows,
+This implementation uses the GNU Science Library (GSL) to perform matrix operations and in some cases directly calls on the seminal BLAS library. The code is broken up into three discrete modules as follows,
 
 __/network/network.h__ contains the core data structures and algorithms for the neural network. It also contains a set of activation functions and cost functions, as well as a set of matrix helper routines.
 
@@ -19,44 +18,7 @@ __/training/training.h__ contains the routines used for training with mini batch
 
 __/mnist/mnist.h__ provides a simple data loader for the MNIST data set that is both space efficient and optimizes for speed of sample retrieval by the caller.
 
-## Work log
-
-### Interim report. (two weeks into the project)
-
-Tasks Accomplished
-
-- Implemented a feedforward neural network datastructure in C using BLAS libraries for matrix operations
-- Used sigmoid neuron layers and implemented feedforward and backpropagation algorithms.
-- Built a custom C loader for both MNIST and CIFAR-10 data
-- Implemented stochastic gradient descent with mini-batches
-
-Roadblock: Network is not performing faster than Nielson's python implementation and maxing out at 80% accuracy. I took your note into account this morning and tried to debug my C code using a small subset of the  MNIST data but was unable to pinpoint the error. Perhaps this is because I have written a lot of messy memory optimizations that have muddied the logic of both the feedforward and backpropagation algorithms, and led to an error that is very hard to pinpoint. I have put around 15 hours into the code so far and I hope to get back on track with a new angle of attack.
-
-Possible solution: This evening I have already implemented about 30% of the functionality of the 2000 line codebase I had written previously in Google's Go programming language. The language has C-like syntax and compiles to machine code with C-competetive performance. It is typed and also has its own memory management system that will help me focus on writing the algorithms and spend less time dealing with memory management, which was taking >50% of my time when I was building in C. I hope to catch up my Go implementation to the functional extent of my C codebase by this Friday and then begin the optimization process.
-
-I hope to implement the following techniques for next Wednesday with both MNIST and CIFAR-10:
-
-- momentum
-- L1/L2 regularization
-- Dropout
-- k-fold cross validation
-- ADAM
-
-### Switch to Golang
-
-After writing the interim report, I pivoted to refactoring the C code into Go, Google's more expressive, type safe and thread safe C-variant language. After spending the next 3 days rewriting
-the code in Go and debugging it, I was both satisfied and disappointed. It was a relief not to have to deal with memory management struggles, although I was running into difficulties with performance as the network continually failed to converge to zero on the XOR problem. These issues persisted even after adjusting the hyper-parameters a great number of times. This was not the
-dagger, however, as I believed that I could eventually tracked down the bug. Once I found my bug (mislabelling a local variable) the computation was extremely slow, taking almost 5 minutes to
-accomplish a single epoch (training on 60,000 MNIST examples & testing on 10,000). For kicks I went back to my C code and spent an evening fixing my memory leak issue, which as it turned out also took care of the logical error in the code as well. At that point, my C network achieved more and in much less time (about 15 seconds per epoch on the same dataset). This promising result
-led me to switch my focus back to the C codebase.
-
-### Returning to C
-
-By the time I switched back to C, I had around a week and a half left to improve my results on the dataset. At this stage I shifted to further optimizing my network by switching out the
-cost function from mean squared error (MSE or quadratic) to cross-entropy cost. This change drastically improved convergence, as expected. I also implemented momentum based weight and bias updates with promising results as well. Whereas before momentum the objective function would fluctuate rather radically, the momentum update had the expected smoothing effect on the decent and
-also allowed me to reach a higher evaluation accuracy on the test set (~80% by epoch 15, converging at ~83%). Although I had already experimented with hyper-parameters such as the learning rate, the size of the network, and the mini-batch size previously, I began to experiment again and found that increasing the mini-batch size to 1000 helped push my accuracy on the test set to ~85% by epoch 15, converging ~90%. The finally change I made was to add L2 regularization which did not affect the convergence of the objective function, as expected, but allowed me to make much faster and continuous improvement on the test set accuracy. Below is a sample run of the latest version network.
-
-```
+## Sample training
 
 $ ./annc
 Initializing network
